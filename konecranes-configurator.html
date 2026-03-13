@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRA — Konecranes AI Crane Configurator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --blue: #003087;
+  --blue-mid: #00419f;
+  --blue-light: #0055cc;
+  --blue-deep: #001040;
+  --yellow: #FFD100;
+  --yellow-dark: #e6bc00;
+  --dark: #070c1a;
+  --dark2: #0d1526;
+  --dark3: #131e35;
+  --card: rgba(255,255,255,0.04);
+  --card-hover: rgba(255,255,255,0.07);
+  --border: rgba(255,255,255,0.08);
+  --border-bright: rgba(255,255,255,0.18);
+  --text: #f0f4ff;
+  --text-muted: rgba(200,215,255,0.65);
+  --text-faint: rgba(200,215,255,0.35);
+  --font-d: 'Barlow Condensed', sans-serif;
+  --font-b: 'DM Sans', sans-serif;
+  --font-m: 'JetBrains Mono', monospace;
+  --r: 10px;
+  --r-lg: 16px;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--dark); color: var(--text); font-family: var(--font-b); font-size: 15px; line-height: 1.6; overflow: hidden; height: 100vh; }
+
+/* ---- SCROLLBARS ---- */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* ---- PAGES ---- */
+.page { display: none; width: 100%; height: 100vh; }
+.page.active { display: flex; flex-direction: column; }
+
+/* ===== LANDING PAGE ===== */
+#page-landing {
+  background: var(--dark);
+  position: relative;
+  overflow: hidden;
+  justify-content: center;
+  align-items: center;
+}
+.landing-bg {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 60% 40%, rgba(0,48,135,0.5) 0%, transparent 70%),
+              radial-gradient(ellipse 40% 40% at 20% 80%, rgba(0,20,60,0.6) 0%, transparent 60%);
+}
+.crane-wireframe {
+  position: absolute; right: -60px; top: 50%; transform: translateY(-50%);
+  opacity: 0.12; pointer-events: none;
+}
+.crane-wireframe svg { width: 600px; height: 500px; }
+.landing-content {
+  position: relative; z-index: 2;
+  max-width: 700px; padding: 40px;
+  text-align: center;
+}
+.kc-logo-wrap { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 52px; }
+.kc-logo-icon { width: 44px; height: 44px; background: var(--yellow); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.kc-logo-icon svg { width: 28px; height: 28px; }
+.kc-logo-text { font-family: var(--font-d); font-size: 22px; font-weight: 700; letter-spacing: 2px; color: var(--text); }
+.kc-tagline-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(0,48,135,0.5); border: 1px solid rgba(0,65,159,0.8);
+  padding: 6px 16px; border-radius: 40px; font-size: 12px; font-weight: 500;
+  color: rgba(180,210,255,0.9); letter-spacing: 0.08em;
+  margin-bottom: 28px;
+}
+.kc-tagline-badge span { width: 6px; height: 6px; background: var(--yellow); border-radius: 50%; }
+h1.hero-title {
+  font-family: var(--font-d); font-size: clamp(44px, 7vw, 80px);
+  font-weight: 800; line-height: 0.95; letter-spacing: -1px;
+  margin-bottom: 24px; color: var(--text);
+}
+h1.hero-title em { color: var(--yellow); font-style: normal; }
+.hero-sub {
+  font-size: 16px; color: var(--text-muted); max-width: 480px; margin: 0 auto 44px;
+  line-height: 1.7;
+}
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--yellow); color: var(--blue-deep); font-family: var(--font-d);
+  font-size: 18px; font-weight: 700; letter-spacing: 1px;
+  padding: 16px 40px; border-radius: var(--r); border: none; cursor: pointer;
+  transition: all 0.2s; text-transform: uppercase;
+}
+.btn-primary:hover { background: #ffe44d; transform: translateY(-2px); box-shadow: 0 12px 40px rgba(255,209,0,0.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary svg { width: 20px; height: 20px; }
+.landing-stats {
+  display: flex; gap: 40px; justify-content: center; margin-top: 52px;
+}
+.stat { text-align: center; }
+.stat-num { font-family: var(--font-d); font-size: 28px; font-weight: 800; color: var(--yellow); }
+.stat-label { font-size: 12px; color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; }
+.lang-selector-wrap { position: absolute; top: 28px; right: 32px; display: flex; gap: 8px; }
+.lang-btn {
+  background: var(--card); border: 1px solid var(--border);
+  color: var(--text-muted); font-family: var(--font-b); font-size: 12px; font-weight: 500;
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+}
+.lang-btn:hover, .lang-btn.active { background: var(--blue); border-color: var(--blue-mid); color: var(--text); }
+
+/* ===== CONFIGURATOR PAGE ===== */
+#page-config { flex-direction: column; }
+.config-nav {
+  background: var(--dark2); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 58px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 20px;
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.nav-logo-icon { width: 30px; height: 30px; background: var(--yellow); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.nav-logo-text { font-family: var(--font-d); font-size: 15px; font-weight: 700; letter-spacing: 1.5px; }
+.progress-track {
+  flex: 1; display: flex; align-items: center; gap: 0; max-width: 600px;
+}
+.prog-step {
+  flex: 1; display: flex; align-items: center; gap: 0; cursor: pointer;
+}
+.prog-dot {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; transition: all 0.25s;
+  border: 2px solid var(--border-bright); color: var(--text-faint);
+  background: transparent; position: relative; z-index: 1;
+}
+.prog-step.done .prog-dot { background: var(--blue); border-color: var(--blue-mid); color: white; }
+.prog-step.active .prog-dot { background: var(--yellow); border-color: var(--yellow); color: var(--blue-deep); }
+.prog-step-label { font-size: 10px; font-weight: 500; letter-spacing: 0.05em; color: var(--text-faint); white-space: nowrap; margin: 0 4px 0 6px; text-transform: uppercase; transition: color 0.2s; }
+.prog-step.active .prog-step-label { color: var(--yellow); }
+.prog-step.done .prog-step-label { color: var(--text-muted); }
+.prog-line { flex: 1; height: 1px; background: var(--border); }
+.prog-step.done .prog-line { background: var(--blue-mid); }
+
+.nav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.nav-apikey {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px;
+}
+.nav-apikey input {
+  background: transparent; border: none; outline: none;
+  color: var(--text); font-family: var(--font-m); font-size: 10px;
+  width: 120px;
+}
+.nav-apikey input::placeholder { color: var(--text-faint); }
+.key-status { width: 7px; height: 7px; border-radius: 50%; background: #666; }
+.key-status.active { background: #22c55e; }
+
+/* Split layout */
+.config-body { flex: 1; display: flex; overflow: hidden; }
+.left-panel {
+  width: 58%; display: flex; flex-direction: column;
+  border-right: 1px solid var(--border); overflow: hidden;
+}
+.right-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Phase header */
+.phase-header {
+  padding: 20px 24px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.phase-tag { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--yellow); margin-bottom: 4px; }
+.phase-title { font-family: var(--font-d); font-size: 22px; font-weight: 700; color: var(--text); }
+
+/* Chat */
+.chat-thread {
+  flex: 1; overflow-y: auto; padding: 16px 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.msg { display: flex; gap: 10px; max-width: 90%; animation: fadeSlideUp 0.3s ease; }
+@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.msg.kira { align-self: flex-start; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: var(--blue); display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-d); font-size: 13px; font-weight: 700; color: var(--yellow);
+  margin-top: 2px;
+}
+.msg-bubble {
+  padding: 11px 15px; border-radius: 12px; font-size: 14px; line-height: 1.6;
+}
+.msg.kira .msg-bubble { background: var(--dark3); border: 1px solid var(--border); color: var(--text); border-radius: 4px 12px 12px 12px; }
+.msg.user .msg-bubble { background: var(--blue); color: white; border-radius: 12px 4px 12px 12px; }
+.typing-indicator { display: flex; gap: 5px; align-items: center; padding: 14px 16px; }
+.typing-indicator span { width: 7px; height: 7px; background: var(--yellow); border-radius: 50%; animation: bounce 1s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+/* Forms */
+.form-panel {
+  border-top: 1px solid var(--border); padding: 16px 24px;
+  overflow-y: auto; max-height: 42%; flex-shrink: 0;
+}
+.form-row { margin-bottom: 14px; }
+.form-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 8px; display: block; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.option-card {
+  padding: 10px 12px; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r); cursor: pointer; text-align: center; transition: all 0.15s;
+  font-size: 12px; color: var(--text-muted);
+}
+.option-card:hover { background: var(--card-hover); border-color: var(--border-bright); color: var(--text); }
+.option-card.selected { background: rgba(0,48,135,0.5); border-color: var(--blue-mid); color: var(--yellow); }
+.option-card .oc-icon { font-size: 20px; margin-bottom: 4px; display: block; }
+.option-card .oc-label { font-size: 11px; font-weight: 500; }
+.slider-wrap { display: flex; align-items: center; gap: 12px; }
+.slider-wrap input[type=range] {
+  flex: 1; -webkit-appearance: none; height: 4px;
+  background: var(--border-bright); border-radius: 2px; outline: none;
+}
+.slider-wrap input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px;
+  background: var(--yellow); border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--blue-deep); box-shadow: 0 0 0 3px rgba(255,209,0,0.2);
+}
+.slider-val { font-family: var(--font-m); font-size: 13px; font-weight: 500; color: var(--yellow); min-width: 58px; text-align: right; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+.toggle-row label { font-size: 13px; color: var(--text-muted); }
+.toggle {
+  width: 40px; height: 22px; background: var(--border-bright); border-radius: 11px;
+  border: none; cursor: pointer; position: relative; transition: background 0.2s;
+}
+.toggle::after {
+  content:''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.2s;
+}
+.toggle.on { background: var(--blue); }
+.toggle.on::after { transform: translateX(18px); }
+.feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.feature-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 10px 12px; cursor: pointer; transition: all 0.15s;
+}
+.feature-toggle:hover { background: var(--card-hover); }
+.feature-toggle.on { border-color: var(--blue-mid); background: rgba(0,48,135,0.3); }
+.feature-name { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+.feature-toggle.on .feature-name { color: var(--text); }
+.mini-toggle { width: 28px; height: 16px; background: var(--border-bright); border-radius: 8px; position: relative; flex-shrink: 0; }
+.mini-toggle::after { content:''; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: white; border-radius: 50%; transition: transform 0.15s; }
+.feature-toggle.on .mini-toggle { background: var(--yellow); }
+.feature-toggle.on .mini-toggle::after { transform: translateX(12px); background: var(--blue-deep); }
+
+/* Voice button */
+.voice-bar {
+  padding: 10px 24px; border-top: 1px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.voice-btn {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--yellow); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.voice-btn:hover { background: #ffe44d; transform: scale(1.05); }
+.voice-btn.recording { background: #ef4444; animation: pulse-rec 1s infinite; }
+@keyframes pulse-rec { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{box-shadow:0 0 0 10px rgba(239,68,68,0)} }
+.voice-btn svg { width: 18px; height: 18px; }
+.voice-hint { font-size: 12px; color: var(--text-faint); flex: 1; }
+.next-phase-btn {
+  background: var(--yellow); color: var(--blue-deep);
+  font-family: var(--font-d); font-size: 15px; font-weight: 700;
+  letter-spacing: 0.5px; padding: 9px 20px; border-radius: 8px;
+  border: none; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.next-phase-btn:hover { background: #ffe44d; }
+
+/* 3D Canvas */
+#crane-canvas { flex: 1; position: relative; background: var(--dark); overflow: hidden; }
+#crane-canvas canvas { width: 100% !important; height: 100% !important; }
+.canvas-overlay {
+  position: absolute; bottom: 12px; left: 12px; right: 12px;
+  display: flex; gap: 8px; flex-direction: column; pointer-events: none;
+}
+.spec-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.spec-pill {
+  background: rgba(7,12,26,0.85); border: 1px solid var(--border-bright);
+  border-radius: 20px; padding: 4px 12px;
+  font-family: var(--font-m); font-size: 11px; color: var(--text-muted);
+  display: flex; gap: 5px; align-items: center;
+}
+.spec-pill strong { color: var(--yellow); font-weight: 500; }
+.canvas-hint { font-size: 10px; color: var(--text-faint); text-align: center; margin-top: 2px; }
+
+/* Right panel bottom */
+.right-bottom {
+  padding: 14px 16px; border-top: 1px solid var(--border);
+  flex-shrink: 0; display: flex; gap: 8px;
+}
+.btn-report {
+  flex: 1; background: var(--yellow); color: var(--blue-deep);
+  font-family: var(--font-d); font-size: 15px; font-weight: 700;
+  letter-spacing: 0.5px; padding: 11px 16px; border-radius: var(--r);
+  border: none; cursor: pointer; transition: all 0.15s;
+}
+.btn-report:hover { background: #ffe44d; }
+.btn-contact {
+  background: transparent; color: var(--text-muted);
+  font-size: 13px; font-weight: 500;
+  padding: 11px 16px; border-radius: var(--r);
+  border: 1px solid var(--border-bright); cursor: pointer; transition: all 0.15s;
+}
+.btn-contact:hover { border-color: var(--blue-mid); color: var(--text); }
+
+/* ===== SUMMARY PAGE ===== */
+#page-summary { overflow-y: auto; background: var(--dark); }
+.summary-nav {
+  background: var(--dark2); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 58px; flex-shrink: 0;
+  display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 10;
+}
+.summary-body { display: flex; height: calc(100vh - 58px); overflow: hidden; }
+.summary-left {
+  width: 50%; overflow-y: auto; padding: 28px 32px;
+  border-right: 1px solid var(--border);
+}
+.summary-right { flex: 1; display: flex; flex-direction: column; }
+#summary-canvas { flex: 1; }
+.summary-ctas { padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+.btn-pdf {
+  flex: 1; background: var(--yellow); color: var(--blue-deep);
+  font-family: var(--font-d); font-size: 16px; font-weight: 700;
+  letter-spacing: 0.5px; padding: 13px 20px; border-radius: var(--r);
+  border: none; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-pdf:hover { background: #ffe44d; }
+.summary-section { margin-bottom: 28px; }
+.sum-heading {
+  font-family: var(--font-d); font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.12em; color: var(--yellow);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.sum-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sum-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg);
+  padding: 16px 20px;
+}
+.sum-reco {
+  background: rgba(0,48,135,0.3); border: 1px solid rgba(0,65,159,0.6);
+  border-radius: var(--r-lg); padding: 20px;
+}
+.sum-reco-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(180,210,255,0.7); margin-bottom: 8px; }
+.sum-reco-name { font-family: var(--font-d); font-size: 26px; font-weight: 800; color: var(--yellow); }
+.sum-reco-desc { font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.6; }
+.sum-table { width: 100%; border-collapse: collapse; }
+.sum-table tr { border-bottom: 1px solid var(--border); }
+.sum-table tr:last-child { border-bottom: none; }
+.sum-table td { padding: 8px 0; font-size: 13px; }
+.sum-table td:first-child { color: var(--text-muted); width: 50%; }
+.sum-table td:last-child { color: var(--text); font-weight: 500; font-family: var(--font-m); }
+.kira-note-box {
+  background: var(--dark3); border: 1px solid var(--border);
+  border-left: 3px solid var(--yellow); border-radius: var(--r);
+  padding: 14px 16px; font-size: 13px; color: var(--text-muted);
+  line-height: 1.7; font-style: italic;
+}
+.features-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.feat-tag {
+  background: rgba(0,48,135,0.4); border: 1px solid rgba(0,65,159,0.5);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 12px; color: rgba(180,210,255,0.9);
+}
+.back-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 13px; padding: 7px 16px;
+  border-radius: 8px; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.back-btn:hover { border-color: var(--border-bright); color: var(--text); }
+
+/* SCROLLABLE inner form panels */
+.phase-form { display: none; }
+.phase-form.active { display: block; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: var(--dark2); border: 1px solid var(--border-bright);
+  border-radius: var(--r-lg); padding: 28px; max-width: 420px; width: 90%;
+}
+.modal-title { font-family: var(--font-d); font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.modal-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+.modal-input {
+  width: 100%; background: var(--dark); border: 1px solid var(--border-bright);
+  border-radius: 8px; color: var(--text); font-family: var(--font-m); font-size: 13px;
+  padding: 11px 14px; outline: none; margin-bottom: 16px;
+}
+.modal-input:focus { border-color: var(--blue-mid); }
+.modal-btns { display: flex; gap: 10px; }
+.btn-modal-primary {
+  flex: 1; background: var(--yellow); color: var(--blue-deep);
+  font-family: var(--font-d); font-size: 15px; font-weight: 700;
+  padding: 11px; border-radius: 8px; border: none; cursor: pointer;
+}
+.btn-modal-skip {
+  background: transparent; color: var(--text-muted); font-size: 13px;
+  padding: 11px 16px; border-radius: 8px; border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+/* Utility */
+.hidden { display: none !important; }
+select {
+  background: var(--card); border: 1px solid var(--border-bright);
+  color: var(--text); font-family: var(--font-b); font-size: 13px;
+  padding: 8px 12px; border-radius: 8px; outline: none; width: 100%;
+}
+select:focus { border-color: var(--blue-mid); }
+</style>
+</head>
+<body>
+
+<!-- ===== LANDING PAGE ===== -->
+<div id="page-landing" class="page active">
+  <div class="landing-bg"></div>
+  <div class="crane-wireframe">
+    <svg viewBox="0 0 600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Runway rails -->
+      <line x1="40" y1="80" x2="560" y2="80" stroke="#FFD100" stroke-width="3"/>
+      <line x1="40" y1="150" x2="560" y2="150" stroke="#FFD100" stroke-width="3"/>
+      <!-- Columns -->
+      <line x1="80" y1="80" x2="80" y2="440" stroke="#4a70c4" stroke-width="2.5"/>
+      <line x1="80" y1="150" x2="80" y2="440" stroke="#4a70c4" stroke-width="2"/>
+      <line x1="520" y1="80" x2="520" y2="440" stroke="#4a70c4" stroke-width="2.5"/>
+      <line x1="520" y1="150" x2="520" y2="440" stroke="#4a70c4" stroke-width="2"/>
+      <!-- Bridge beam -->
+      <rect x="40" y="90" width="520" height="22" rx="4" fill="none" stroke="#6699ff" stroke-width="1.5"/>
+      <rect x="40" y="120" width="520" height="22" rx="4" fill="none" stroke="#6699ff" stroke-width="1.5"/>
+      <!-- End trucks -->
+      <rect x="40" y="78" width="40" height="100" rx="6" fill="none" stroke="#FFD100" stroke-width="2"/>
+      <rect x="520" y="78" width="40" height="100" rx="6" fill="none" stroke="#FFD100" stroke-width="2"/>
+      <!-- Hoist -->
+      <rect x="270" y="112" width="60" height="50" rx="6" fill="none" stroke="#8ab4ff" stroke-width="2"/>
+      <!-- Wire -->
+      <line x1="300" y1="162" x2="300" y2="360" stroke="#888" stroke-width="1.5" stroke-dasharray="6,4"/>
+      <!-- Hook -->
+      <path d="M 285 355 Q 300 380 315 355" stroke="#FFD100" stroke-width="2.5" fill="none"/>
+      <!-- Floor -->
+      <line x1="40" y1="440" x2="560" y2="440" stroke="#2a3a6a" stroke-width="1"/>
+      <!-- Grid lines on floor -->
+      <line x1="120" y1="440" x2="120" y2="460" stroke="#1a2a50" stroke-width="1"/>
+      <line x1="200" y1="440" x2="200" y2="460" stroke="#1a2a50" stroke-width="1"/>
+      <line x1="280" y1="440" x2="280" y2="460" stroke="#1a2a50" stroke-width="1"/>
+      <line x1="360" y1="440" x2="360" y2="460" stroke="#1a2a50" stroke-width="1"/>
+      <line x1="440" y1="440" x2="440" y2="460" stroke="#1a2a50" stroke-width="1"/>
+    </svg>
+  </div>
+  <div class="lang-selector-wrap" id="landing-langs">
+    <button class="lang-btn active" onclick="setLang('en','landing')">EN</button>
+    <button class="lang-btn" onclick="setLang('de','landing')">DE</button>
+    <button class="lang-btn" onclick="setLang('fi','landing')">FI</button>
+    <button class="lang-btn" onclick="setLang('zh','landing')">ZH</button>
+  </div>
+  <div class="landing-content">
+    <div class="kc-logo-wrap">
+      <div class="kc-logo-icon">
+        <svg viewBox="0 0 28 28" fill="none"><path d="M4 4h8l8 10-8 10H4l8-10Z" fill="#003087"/></svg>
+      </div>
+      <span class="kc-logo-text">KONECRANES</span>
+    </div>
+    <div class="kc-tagline-badge"><span></span><span id="badge-text">AI-Powered Crane Configurator</span></div>
+    <h1 class="hero-title" id="hero-title">Configure Your Crane.<br><em>See It Live.</em></h1>
+    <p class="hero-sub" id="hero-sub">Meet KIRA — your intelligent lifting advisor. Answer a few questions, watch your crane take shape in 3D, and download a full requirements report in minutes.</p>
+    <button class="btn-primary" onclick="startConfig()">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a8 8 0 100 16A8 8 0 0010 2zm1 11H9V9h2v4zm0-6H9V5h2v2z"/></svg>
+      <span id="cta-text">Start Configuring</span>
+    </button>
+    <div class="landing-stats">
+      <div class="stat"><div class="stat-num">6</div><div class="stat-label" id="stat1">Minutes avg.</div></div>
+      <div class="stat"><div class="stat-num">3</div><div class="stat-label" id="stat2">Crane families</div></div>
+      <div class="stat"><div class="stat-num">50+</div><div class="stat-label" id="stat3">Config parameters</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONFIGURATOR PAGE ===== -->
+<div id="page-config" class="page">
+  <!-- Nav bar -->
+  <nav class="config-nav">
+    <div class="nav-logo">
+      <div class="nav-logo-icon">
+        <svg viewBox="0 0 28 28" fill="none" width="18" height="18"><path d="M4 4h8l8 10-8 10H4l8-10Z" fill="#003087"/></svg>
+      </div>
+      <span class="nav-logo-text">KONECRANES</span>
+    </div>
+    <div class="progress-track" id="progress-track">
+      <!-- JS generated -->
+    </div>
+    <div class="nav-right">
+      <div class="nav-apikey">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-faint)"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        <input type="password" placeholder="Anthropic API key (optional)" id="api-key-input" oninput="setApiKey(this.value)">
+        <div class="key-status" id="key-status"></div>
+      </div>
+      <div class="lang-selector-wrap" style="position:static;gap:5px;">
+        <button class="lang-btn active" onclick="setLang('en','config')" id="ln-en">EN</button>
+        <button class="lang-btn" onclick="setLang('de','config')" id="ln-de">DE</button>
+        <button class="lang-btn" onclick="setLang('fi','config')" id="ln-fi">FI</button>
+        <button class="lang-btn" onclick="setLang('zh','config')" id="ln-zh">ZH</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Body -->
+  <div class="config-body">
+    <!-- Left: Chat + Forms -->
+    <div class="left-panel">
+      <div class="phase-header">
+        <div class="phase-tag" id="phase-tag">Phase 1 of 5</div>
+        <div class="phase-title" id="phase-title">Industry & Application</div>
+      </div>
+      <div class="chat-thread" id="chat-thread"></div>
+      <div class="form-panel" id="form-panel">
+        <!-- Phase 1: Industry -->
+        <div class="phase-form active" id="form-1">
+          <div class="form-row">
+            <label class="form-label">Your Industry</label>
+            <div class="form-grid" id="industry-grid">
+              <div class="option-card" onclick="selectIndustry('steel')" data-val="steel"><span class="oc-icon">🏭</span><span class="oc-label">Steel & Metal</span></div>
+              <div class="option-card" onclick="selectIndustry('automotive')" data-val="automotive"><span class="oc-icon">🚗</span><span class="oc-label">Automotive</span></div>
+              <div class="option-card" onclick="selectIndustry('port')" data-val="port"><span class="oc-icon">⚓</span><span class="oc-label">Port & Shipyard</span></div>
+              <div class="option-card" onclick="selectIndustry('energy')" data-val="energy"><span class="oc-icon">⚡</span><span class="oc-label">Energy</span></div>
+              <div class="option-card" onclick="selectIndustry('mining')" data-val="mining"><span class="oc-icon">⛏️</span><span class="oc-label">Mining</span></div>
+              <div class="option-card" onclick="selectIndustry('general')" data-val="general"><span class="oc-icon">🏗️</span><span class="oc-label">Manufacturing</span></div>
+              <div class="option-card" onclick="selectIndustry('paper')" data-val="paper"><span class="oc-icon">📦</span><span class="oc-label">Paper & Pulp</span></div>
+              <div class="option-card" onclick="selectIndustry('other')" data-val="other"><span class="oc-icon">🔧</span><span class="oc-label">Other</span></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Operating Environment</label>
+            <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+              <div class="option-card" onclick="selectEnv('indoor')" data-val="indoor"><span class="oc-icon">🏢</span><span class="oc-label">Indoor</span></div>
+              <div class="option-card" onclick="selectEnv('outdoor')" data-val="outdoor"><span class="oc-icon">🌤️</span><span class="oc-label">Outdoor</span></div>
+              <div class="option-card" onclick="selectEnv('both')" data-val="both"><span class="oc-icon">🌍</span><span class="oc-label">Both</span></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Number of Crane Units Needed</label>
+            <div class="slider-wrap">
+              <input type="range" min="1" max="20" value="1" id="sl-units" oninput="APP.config.units=+this.value;document.getElementById('v-units').textContent=this.value" onchange="onFormChange('units',this.value,'unit(s)')">
+              <span class="slider-val" id="v-units">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 2: Facility -->
+        <div class="phase-form" id="form-2">
+          <div class="form-row">
+            <label class="form-label">Crane Span (m) — distance between rails</label>
+            <div class="slider-wrap">
+              <input type="range" min="3" max="50" value="20" id="sl-span" oninput="APP.config.span=+this.value;document.getElementById('v-span').textContent=this.value+'m'" onchange="onSliderFinal('span',this.value,'m span')">
+              <span class="slider-val" id="v-span">20m</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Hook Height (m) — floor to maximum hook position</label>
+            <div class="slider-wrap">
+              <input type="range" min="3" max="30" value="10" id="sl-height" oninput="APP.config.bayHeight=+this.value;document.getElementById('v-height').textContent=this.value+'m'" onchange="onSliderFinal('bayHeight',this.value,'m hook height')">
+              <span class="slider-val" id="v-height">10m</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Runway Length (m)</label>
+            <div class="slider-wrap">
+              <input type="range" min="5" max="200" value="50" id="sl-runway" oninput="APP.config.runway=+this.value;document.getElementById('v-runway').textContent=this.value+'m'" onchange="onSliderFinal('runway',this.value,'m runway')">
+              <span class="slider-val" id="v-runway">50m</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Building Structure</label>
+            <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
+              <div class="option-card" onclick="selectOpt('structure','truss',this)" data-val="truss"><span class="oc-icon">🔩</span><span class="oc-label">Steel Truss</span></div>
+              <div class="option-card" onclick="selectOpt('structure','concrete',this)" data-val="concrete"><span class="oc-icon">🏛️</span><span class="oc-label">Concrete</span></div>
+              <div class="option-card" onclick="selectOpt('structure','gantry',this)" data-val="gantry"><span class="oc-icon">🏗️</span><span class="oc-label">Freestanding</span></div>
+              <div class="option-card" onclick="selectOpt('structure','unknown',this)" data-val="unknown"><span class="oc-icon">❓</span><span class="oc-label">Not Sure</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 3: Load -->
+        <div class="phase-form" id="form-3">
+          <div class="form-row">
+            <label class="form-label">Maximum Load Capacity (tonnes)</label>
+            <div class="slider-wrap">
+              <input type="range" min="1" max="200" value="10" id="sl-cap" oninput="APP.config.capacity=+this.value;document.getElementById('v-cap').textContent=this.value+'t'" onchange="onSliderFinal('capacity',this.value,'t max capacity')">
+              <span class="slider-val" id="v-cap">10t</span>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Hoist Speed</label>
+            <div class="form-grid" style="grid-template-columns:repeat(3,1fr)">
+              <div class="option-card" onclick="selectOpt('hoistSpeed','standard',this)"><span class="oc-icon">🐢</span><span class="oc-label">Standard</span></div>
+              <div class="option-card" onclick="selectOpt('hoistSpeed','high',this)"><span class="oc-icon">🐇</span><span class="oc-label">High Speed</span></div>
+              <div class="option-card" onclick="selectOpt('hoistSpeed','variable',this)"><span class="oc-icon">🎛️</span><span class="oc-label">Variable</span></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Shifts Per Day</label>
+            <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
+              <div class="option-card" onclick="selectOpt('shifts','1',this)"><span class="oc-icon">☀️</span><span class="oc-label">1 Shift</span></div>
+              <div class="option-card" onclick="selectOpt('shifts','2',this)"><span class="oc-icon">🌙</span><span class="oc-label">2 Shifts</span></div>
+              <div class="option-card" onclick="selectOpt('shifts','3',this)"><span class="oc-icon">⏰</span><span class="oc-label">3 Shifts</span></div>
+              <div class="option-card" onclick="selectOpt('shifts','24',this)"><span class="oc-icon">♾️</span><span class="oc-label">Continuous</span></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Primary Load Type</label>
+            <div class="form-grid">
+              <div class="option-card" onclick="selectOpt('loadType','coils',this)"><span class="oc-icon">🔄</span><span class="oc-label">Coils</span></div>
+              <div class="option-card" onclick="selectOpt('loadType','containers',this)"><span class="oc-icon">📦</span><span class="oc-label">Containers</span></div>
+              <div class="option-card" onclick="selectOpt('loadType','beams',this)"><span class="oc-icon">📏</span><span class="oc-label">Beams/Slabs</span></div>
+              <div class="option-card" onclick="selectOpt('loadType','machinery',this)"><span class="oc-icon">⚙️</span><span class="oc-label">Machinery</span></div>
+              <div class="option-card" onclick="selectOpt('loadType','molten',this)"><span class="oc-icon">🌋</span><span class="oc-label">Molten Metal</span></div>
+              <div class="option-card" onclick="selectOpt('loadType','general',this)"><span class="oc-icon">🎁</span><span class="oc-label">General</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 4: Environment -->
+        <div class="phase-form" id="form-4">
+          <div class="form-row">
+            <label class="form-label">Ambient Temperature Range</label>
+            <div style="display:flex;gap:16px;">
+              <div style="flex:1">
+                <div style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">MIN °C</div>
+                <div class="slider-wrap">
+                  <input type="range" min="-40" max="20" value="-10" id="sl-tmin" oninput="APP.config.tempMin=+this.value;document.getElementById('v-tmin').textContent=this.value+'°C'" onchange="onFormChange('tempRange',APP.config.tempMin+' to '+APP.config.tempMax,'°C temp range')">
+                  <span class="slider-val" id="v-tmin">-10°C</span>
+                </div>
+              </div>
+              <div style="flex:1">
+                <div style="font-size:11px;color:var(--text-faint);margin-bottom:4px;">MAX °C</div>
+                <div class="slider-wrap">
+                  <input type="range" min="20" max="80" value="40" id="sl-tmax" oninput="APP.config.tempMax=+this.value;document.getElementById('v-tmax').textContent=this.value+'°C'" onchange="onFormChange('tempRange',APP.config.tempMin+' to '+APP.config.tempMax,'°C temp range')">
+                  <span class="slider-val" id="v-tmax">40°C</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="toggle-row">
+              <label>Hazardous atmosphere / ATEX required?</label>
+              <button class="toggle" id="tog-hazard" onclick="toggleBool('hazardous','tog-hazard','Hazardous ATEX environment required')"></button>
+            </div>
+            <div id="atex-row" class="hidden" style="margin-top:10px;">
+              <label class="form-label">ATEX Zone</label>
+              <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
+                <div class="option-card" onclick="selectOpt('atexZone','1',this)"><span class="oc-label">Zone 1</span></div>
+                <div class="option-card" onclick="selectOpt('atexZone','2',this)"><span class="oc-label">Zone 2</span></div>
+                <div class="option-card" onclick="selectOpt('atexZone','21',this)"><span class="oc-label">Zone 21</span></div>
+                <div class="option-card" onclick="selectOpt('atexZone','22',this)"><span class="oc-label">Zone 22</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="toggle-row">
+              <label>Corrosive environment (salt air, chemicals)?</label>
+              <button class="toggle" id="tog-corrosive" onclick="toggleBool('corrosive','tog-corrosive','Corrosive environment protection needed')"></button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Required Certifications</label>
+            <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
+              <div class="option-card" id="cert-ce" onclick="toggleCert('CE',this)"><span class="oc-label">CE Mark</span></div>
+              <div class="option-card" id="cert-atex" onclick="toggleCert('ATEX',this)"><span class="oc-label">ATEX</span></div>
+              <div class="option-card" id="cert-fem" onclick="toggleCert('FEM',this)"><span class="oc-label">FEM</span></div>
+              <div class="option-card" id="cert-iso" onclick="toggleCert('ISO',this)"><span class="oc-label">ISO 9001</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 5: Features & Budget -->
+        <div class="phase-form" id="form-5">
+          <div class="form-row">
+            <label class="form-label">Smart Features — Select all that apply</label>
+            <div class="feature-grid">
+              <div class="feature-toggle" onclick="toggleFeature('TRUCONNECT',this)">
+                <span class="feature-name">TRUCONNECT® Monitoring</span>
+                <div class="mini-toggle"></div>
+              </div>
+              <div class="feature-toggle" onclick="toggleFeature('anti-sway',this)">
+                <span class="feature-name">Anti-Sway Control</span>
+                <div class="mini-toggle"></div>
+              </div>
+              <div class="feature-toggle" onclick="toggleFeature('positioning',this)">
+                <span class="feature-name">Auto Positioning</span>
+                <div class="mini-toggle"></div>
+              </div>
+              <div class="feature-toggle" onclick="toggleFeature('collision',this)">
+                <span class="feature-name">Collision Avoidance</span>
+                <div class="mini-toggle"></div>
+              </div>
+              <div class="feature-toggle" onclick="toggleFeature('weighing',this)">
+                <span class="feature-name">Load Weighing System</span>
+                <div class="mini-toggle"></div>
+              </div>
+              <div class="feature-toggle" onclick="toggleFeature('remote-diag',this)">
+                <span class="feature-name">Remote Diagnostics</span>
+                <div class="mini-toggle"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Investment Budget (EUR)</label>
+            <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
+              <div class="option-card" onclick="selectOpt('budget','<50k',this)"><span class="oc-label">&lt;€50k</span></div>
+              <div class="option-card" onclick="selectOpt('budget','50-100k',this)"><span class="oc-label">€50–100k</span></div>
+              <div class="option-card" onclick="selectOpt('budget','100-500k',this)"><span class="oc-label">€100–500k</span></div>
+              <div class="option-card" onclick="selectOpt('budget','>500k',this)"><span class="oc-label">&gt;€500k</span></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <label class="form-label">Target Delivery Timeline</label>
+            <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
+              <div class="option-card" onclick="selectOpt('timeline','<3m',this)"><span class="oc-label">&lt;3 months</span></div>
+              <div class="option-card" onclick="selectOpt('timeline','3-6m',this)"><span class="oc-label">3–6 months</span></div>
+              <div class="option-card" onclick="selectOpt('timeline','6-12m',this)"><span class="oc-label">6–12 months</span></div>
+              <div class="option-card" onclick="selectOpt('timeline','flexible',this)"><span class="oc-label">Flexible</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Voice bar -->
+      <div class="voice-bar">
+        <button class="voice-btn" id="voice-btn" onclick="toggleVoice()" title="Speak your answer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue-deep)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10a7 7 0 0014 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+        <span class="voice-hint" id="voice-hint">Click mic to speak your answer, or use the form above</span>
+        <button class="next-phase-btn" id="next-btn" onclick="nextPhase()">
+          Next <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: 3D Crane + specs -->
+    <div class="right-panel">
+      <div id="crane-canvas" style="flex:1;position:relative;overflow:hidden;"></div>
+      <div class="canvas-overlay" style="position:absolute;bottom:70px;left:12px;right:12px;pointer-events:none;">
+        <div class="spec-pills" id="spec-pills">
+          <div class="spec-pill"><strong id="sp-type">—</strong> crane type</div>
+          <div class="spec-pill">Span <strong id="sp-span">—</strong></div>
+          <div class="spec-pill">Cap <strong id="sp-cap">—</strong></div>
+          <div class="spec-pill">Height <strong id="sp-ht">—</strong></div>
+        </div>
+        <div class="canvas-hint">Drag to rotate · Scroll to zoom</div>
+      </div>
+      <div class="right-bottom">
+        <button class="btn-report" onclick="showSummary()">📋 View Full Report</button>
+        <button class="btn-contact" onclick="alert('A Konecranes expert would contact you here.')">Contact Expert</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SUMMARY PAGE ===== -->
+<div id="page-summary" class="page">
+  <nav class="summary-nav">
+    <div class="nav-logo">
+      <div class="nav-logo-icon">
+        <svg viewBox="0 0 28 28" fill="none" width="18" height="18"><path d="M4 4h8l8 10-8 10H4l8-10Z" fill="#003087"/></svg>
+      </div>
+      <span class="nav-logo-text">KONECRANES</span>
+    </div>
+    <button class="back-btn" onclick="goBack()" style="margin-left:16px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to Configurator
+    </button>
+    <span style="font-size:13px;color:var(--text-faint);margin-left:auto;">Session: <span id="session-id" style="font-family:var(--font-m);font-size:11px;"></span></span>
+  </nav>
+  <div class="summary-body">
+    <div class="summary-left">
+      <div class="summary-section">
+        <div class="sum-heading">Recommendation</div>
+        <div class="sum-reco">
+          <div class="sum-reco-label">KIRA Recommends</div>
+          <div class="sum-reco-name" id="sum-crane-name">—</div>
+          <div class="sum-reco-desc" id="sum-crane-desc">—</div>
+        </div>
+      </div>
+      <div class="summary-section">
+        <div class="sum-heading">KIRA's Assessment</div>
+        <div class="kira-note-box" id="sum-kira-note">Generating assessment...</div>
+      </div>
+      <div class="summary-section">
+        <div class="sum-heading">Configuration Summary</div>
+        <div class="sum-card">
+          <table class="sum-table" id="sum-table"></table>
+        </div>
+      </div>
+      <div class="summary-section" id="features-section">
+        <div class="sum-heading">Smart Features Selected</div>
+        <div class="features-list" id="sum-features"></div>
+      </div>
+      <div class="summary-section">
+        <div class="sum-heading">Next Steps</div>
+        <div class="sum-card" style="font-size:13px;color:var(--text-muted);line-height:1.8;">
+          <strong style="color:var(--text);">1.</strong> Download your PDF report below<br>
+          <strong style="color:var(--text);">2.</strong> Forward to your Konecranes representative<br>
+          <strong style="color:var(--text);">3.</strong> A specialist will refine and confirm the proposal<br>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;font-style:italic;color:var(--text-faint);">
+            This report is indicative. Final specifications are subject to engineering review.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="summary-right">
+      <div id="summary-canvas" style="flex:1;"></div>
+      <div class="summary-ctas">
+        <button class="btn-pdf" onclick="downloadPDF()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download PDF Report
+        </button>
+        <button class="btn-contact" onclick="alert('Contact form — integrate with your CRM here.')">Contact Expert</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-overlay" id="modal-welcome">
+  <div class="modal-box">
+    <div class="modal-title">🔑 Add Your API Key</div>
+    <div class="modal-desc">Add your Anthropic API key to enable KIRA's real AI responses. Skip to use demo mode with scripted responses — all features still work.</div>
+    <input class="modal-input" type="password" placeholder="sk-ant-..." id="modal-api-input">
+    <div class="modal-btns">
+      <button class="btn-modal-primary" onclick="saveModalKey()">Activate KIRA AI</button>
+      <button class="btn-modal-skip" onclick="closeModal('modal-welcome')">Use Demo Mode</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== CONSTANTS =====
+const PHASES = [
+  { id:1, tag:'Phase 1 of 5', title:'Industry & Application', form:'form-1' },
+  { id:2, tag:'Phase 2 of 5', title:'Facility & Dimensions',  form:'form-2' },
+  { id:3, tag:'Phase 3 of 5', title:'Load & Performance',     form:'form-3' },
+  { id:4, tag:'Phase 4 of 5', title:'Environment & Safety',   form:'form-4' },
+  { id:5, tag:'Phase 5 of 5', title:'Smart Features & Budget',form:'form-5' }
+];
+const PHASE_LABELS = ['Industry','Facility','Load','Environment','Features'];
+
+// ===== i18n =====
+const T = {
+  en: {
+    badge:'AI-Powered Crane Configurator', hero:'Configure Your Crane.<br><em>See It Live.</em>',
+    sub:'Meet KIRA — your intelligent lifting advisor. Answer a few questions, watch your crane take shape in 3D, and download a full requirements report in minutes.',
+    cta:'Start Configuring', s1:'Minutes avg.', s2:'Crane families', s3:'Config parameters',
+    kira_intro:"Hello! I'm KIRA — your Konecranes Intelligent Requirements Advisor. I'll help you configure the perfect crane for your needs. Let's start with your industry. Which sector are you in?"
+  },
+  de: {
+    badge:'KI-gestützter Krankonfigurator', hero:'Kran konfigurieren.<br><em>Live erleben.</em>',
+    sub:'KIRA — Ihr intelligenter Krantechnik-Berater. Beantworten Sie einige Fragen und laden Sie einen vollständigen Anforderungsbericht herunter.',
+    cta:'Konfiguration starten', s1:'Ø Minuten', s2:'Kranfamilien', s3:'Parameter',
+    kira_intro:'Hallo! Ich bin KIRA — Ihr Konecranes-KI-Berater. Lassen Sie uns beginnen: In welcher Branche sind Sie tätig?'
+  },
+  fi: {
+    badge:'Tekoälyllä toimiva nosturikonfiguaattori', hero:'Konfiguroi nosturisi.<br><em>Näe se livenä.</em>',
+    sub:'KIRA — älykkäät nosturiasiantuntijasi. Vastaa muutamaan kysymykseen ja lataa vaatimusraportti.',
+    cta:'Aloita konfigurointi', s1:'Min keskimäärin', s2:'Nosturiperheet', s3:'Parametrit',
+    kira_intro:'Hei! Olen KIRA — Konecranesin tekoälyneuvoja. Aloitetaan: millä toimialalla olet?'
+  },
+  zh: {
+    badge:'AI智能起重机配置器', hero:'配置您的起重机。<br><em>实时预览。</em>',
+    sub:'认识KIRA — 您的智能起重机顾问。回答几个问题，实时查看您的起重机，并下载完整的需求报告。',
+    cta:'开始配置', s1:'平均分钟数', s2:'起重机系列', s3:'配置参数',
+    kira_intro:'您好！我是KIRA — Konecranes智能需求顾问。让我们开始：您所在的行业是？'
+  }
+};
+
+// ===== DEMO RESPONSES =====
+const DEMO = {
+  1: { en: "Great choice! Based on your industry selection, I can already see the type of crane solution you'll likely need. The environment setting is crucial — it determines protection ratings and structural requirements. Let me know your facility dimensions next and I'll start refining the 3D model for you.", de: "Ausgezeichnete Wahl! Basierend auf Ihrer Branchenauswahl sehe ich bereits, welche Kranlösung Sie wahrscheinlich benötigen. Fahren Sie fort mit den Abmessungen.", fi: "Loistava valinta! Toimialatietonne perusteella voin jo nähdä tarvitsemanne nosturityypin. Jatkakaa tilamittoihin.", zh: "很好的选择！根据您的行业选择，我已经可以判断您可能需要的起重机类型。接下来请提供您的设施尺寸。" },
+  2: { en: "These are excellent dimensions. A span in that range puts you in the CXT or XLD product family. I've updated the 3D model — you can drag it to inspect all angles. Now let's talk about what this crane needs to lift and how often.", de: "Ausgezeichnete Abmessungen. Die Spannweite passt zur CXT oder XLD-Familie. Das 3D-Modell wurde aktualisiert. Sprechen wir jetzt über die Lasten.", fi: "Erinomaiset mitat. Jännevälin perusteella suosittelisin CXT tai XLD -sarjaa. 3D-malli on päivitetty. Puhutaan nyt kuormista.", zh: "尺寸非常合适。根据跨度，我推荐CXT或XLD产品系列。3D模型已更新。现在让我们谈谈负载要求。" },
+  3: { en: "Got it. With that load capacity and duty cycle, the duty class calculates to M5-M6 — that's a regular service crane, which is the most common class. The hoist unit on your 3D model has updated to reflect the capacity. One last major factor: the operating environment.", de: "Verstanden. Mit dieser Tragfähigkeit ergibt sich Betriebsklasse M5-M6. Das Modell wurde aktualisiert. Nun zum Betriebsumfeld.", fi: "Selvä. Tuolla kuormituksella käyttöluokka on M5-M6. Malli on päivitetty. Seuraavaksi käyttöympäristöön.", zh: "明白了。根据该载重量，使用等级计算为M5-M6。3D模型已更新。最后一个重要因素：操作环境。" },
+  4: { en: "Environmental data captured. The temperature range and any hazardous atmosphere requirements have a significant impact on the crane specification — particularly the electrical components and protection ratings. Almost there! Let's select smart features and finalize the configuration.", de: "Umgebungsdaten erfasst. Temperatur und Atmosphärenbedingungen beeinflussen die Spezifikation erheblich. Fast fertig — wählen wir jetzt die Smart Features.", fi: "Ympäristötiedot tallennettu. Lämpötila ja mahdolliset räjähdysvaarat vaikuttavat merkittävästi spesifikaatioon. Valitaan nyt älyominaisuudet.", zh: "环境数据已记录。温度范围和危险大气要求对起重机规格有重大影响。快完成了！让我们选择智能功能并最终确定配置。" },
+  5: { en: "Excellent configuration! You've selected a well-rounded set of smart features that will significantly reduce maintenance costs and improve productivity. I've compiled your full requirements report — let's take a look at the complete summary and your 3D crane preview.", de: "Ausgezeichnete Konfiguration! Die Smart Features werden die Wartungskosten erheblich senken. Ihr Bericht ist fertig — schauen wir uns die Zusammenfassung an.", fi: "Erinomainen konfiguraatio! Valitut älyominaisuudet vähentävät merkittävästi huoltokustannuksia. Raporttisi on valmis — katsotaan yhteenveto.", zh: "配置出色！您选择的智能功能将显著降低维护成本并提高生产率。您的完整需求报告已编制完成。" }
+};
+
+// ===== APP STATE =====
+const APP = {
+  page: 'landing', phase: 1, lang: 'en', apiKey: '',
+  sessionId: Math.random().toString(36).substr(2,8).toUpperCase(),
+  config: {
+    industry: null, environment: 'indoor', units: 1,
+    span: 20, bayHeight: 10, runway: 50,
+    structure: null, capacity: 10, hoistSpeed: 'standard',
+    shifts: null, loadType: null,
+    tempMin: -10, tempMax: 40, hazardous: false, corrosive: false, atexZone: null,
+    certifications: [], features: [], budget: null, timeline: null
+  },
+  messages: [],
+  crane: null, summaryCrane: null,
+  voiceActive: false, recognition: null
+};
+
+// ===== CRANE 3D MODEL =====
+class Crane3D {
+  constructor(container) {
+    this.container = container;
+    this.params = { span:20, height:10, runway:50, capacity:10, outdoor:false, hazardous:false, features:[] };
+    this.theta = 0.5; this.phi = 0.4; this.radius = 45;
+    this.isDragging = false; this.prevMouse = {x:0,y:0};
+    this.autoRotate = true;
+    this.setup();
+    this.build();
+    this.tick();
+  }
+
+  setup() {
+    const W = this.container.clientWidth || 400;
+    const H = this.container.clientHeight || 400;
+    this.renderer = new THREE.WebGLRenderer({ antialias:true, preserveDrawingBuffer:true });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    this.renderer.setSize(W,H);
+    this.renderer.setClearColor(0x070c1a,1);
+    this.renderer.shadowMap.enabled = true;
+    this.container.appendChild(this.renderer.domElement);
+    this.renderer.domElement.style.cssText = 'width:100%;height:100%;display:block;';
+
+    this.scene = new THREE.Scene();
+    this.scene.fog = new THREE.FogExp2(0x070c1a, 0.008);
+
+    this.camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 1000);
+    this.camera.position.set(25, 18, 25);
+    this.camera.lookAt(0, 5, 0);
+
+    // Lights
+    this.scene.add(new THREE.AmbientLight(0x4060aa, 0.5));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+    sun.position.set(40, 60, 20); sun.castShadow = true;
+    this.scene.add(sun);
+    const fill = new THREE.PointLight(0x2040ff, 0.3, 120);
+    fill.position.set(-30, 15, -20);
+    this.scene.add(fill);
+
+    // Grid
+    const grid = new THREE.GridHelper(150, 30, 0x003087, 0x001040);
+    grid.position.y = 0; this.scene.add(grid);
+
+    // Mouse controls
+    const el = this.renderer.domElement;
+    el.addEventListener('mousedown', e => { this.isDragging=true; this.autoRotate=false; this.prevMouse={x:e.clientX,y:e.clientY}; });
+    window.addEventListener('mouseup', () => { this.isDragging=false; });
+    el.addEventListener('mousemove', e => {
+      if(!this.isDragging) return;
+      this.theta -= (e.clientX-this.prevMouse.x)*0.006;
+      this.phi = Math.max(0.08, Math.min(1.3, this.phi - (e.clientY-this.prevMouse.y)*0.006));
+      this.prevMouse = {x:e.clientX,y:e.clientY};
+    });
+    el.addEventListener('wheel', e => { this.radius = Math.max(8, Math.min(100, this.radius + e.deltaY*0.06)); }, {passive:true});
+
+    // Touch
+    let lastTouchX = 0, lastTouchY = 0;
+    el.addEventListener('touchstart', e => { lastTouchX=e.touches[0].clientX; lastTouchY=e.touches[0].clientY; this.autoRotate=false; });
+    el.addEventListener('touchmove', e => {
+      this.theta -= (e.touches[0].clientX - lastTouchX)*0.006;
+      this.phi = Math.max(0.08, Math.min(1.3, this.phi - (e.touches[0].clientY - lastTouchY)*0.006));
+      lastTouchX=e.touches[0].clientX; lastTouchY=e.touches[0].clientY;
+    });
+
+    new ResizeObserver(() => this.resize()).observe(this.container);
+  }
+
+  build() {
+    if (this.craneGroup) { this.scene.remove(this.craneGroup); }
+    this.craneGroup = new THREE.Group();
+    this.scene.add(this.craneGroup);
+    const p = this.params;
+    const S = p.span, H = p.height, R = p.runway;
+    const heavy = p.capacity > 25;
+    const portMode = (APP.config.industry === 'port');
+
+    const mBlue = new THREE.MeshPhongMaterial({ color:0x003087, shininess:90 });
+    const mYellow = new THREE.MeshPhongMaterial({ color:0xFFD100, shininess:120 });
+    const mSteel = new THREE.MeshPhongMaterial({ color:0x1a2a5e, shininess:50 });
+    const mDark = new THREE.MeshPhongMaterial({ color:0x0d1830, shininess:30 });
+    const mRope = new THREE.LineBasicMaterial({ color:0xaaaaaa });
+    const mSensor = new THREE.MeshPhongMaterial({ color:0x00aaff, emissive:0x003366, emissiveIntensity:0.8 });
+
+    // --- Runway rails ---
+    const railGeo = new THREE.BoxGeometry(0.35, 0.3, R);
+    const rL = new THREE.Mesh(railGeo, mSteel); rL.position.set(-S/2, H, 0);
+    const rR = new THREE.Mesh(railGeo, mSteel); rR.position.set( S/2, H, 0);
+    this.craneGroup.add(rL, rR);
+
+    // --- Support columns (4) ---
+    const colSpans = [[-S/2, -R*0.38], [-S/2, R*0.38], [S/2, -R*0.38], [S/2, R*0.38]];
+    colSpans.forEach(([cx, cz]) => {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.45, H, 0.45), mBlue);
+      col.position.set(cx, H/2, cz); col.castShadow = true;
+      this.craneGroup.add(col);
+      // Column base plate
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.15, 1.2), mDark);
+      base.position.set(cx, 0.075, cz);
+      this.craneGroup.add(base);
+    });
+
+    // --- Bridge beam(s) ---
+    const bH = heavy ? 1.2 : 0.75; const bD = heavy ? 0.9 : 0.55;
+    const bridgeGeo = new THREE.BoxGeometry(S, bH, bD);
+    const bridge = new THREE.Mesh(bridgeGeo, mBlue);
+    bridge.position.set(0, H - bH/2 - 0.15, heavy ? -0.6 : 0);
+    bridge.castShadow = true;
+    this.craneGroup.add(bridge);
+    if (heavy) {
+      const bridge2 = new THREE.Mesh(bridgeGeo, mBlue);
+      bridge2.position.set(0, H - bH/2 - 0.15, 0.6);
+      bridge2.castShadow = true;
+      this.craneGroup.add(bridge2);
+    }
+
+    // --- End trucks (yellow) ---
+    const etW = 1.0, etH = 0.6, etD = heavy ? 3.5 : 2.2;
+    const etGeo = new THREE.BoxGeometry(etW, etH, etD);
+    [-S/2+etW*0.5, S/2-etW*0.5].forEach(ex => {
+      const et = new THREE.Mesh(etGeo, mYellow);
+      et.position.set(ex, H - 0.05, 0); et.castShadow = true;
+      this.craneGroup.add(et);
+      // Wheels (small cylinders)
+      [[0, -etD*0.35],[0, etD*0.35]].forEach(([wz1,wz2]) => {
+        const wGeo = new THREE.CylinderGeometry(0.18, 0.18, 0.1, 8);
+        const w = new THREE.Mesh(wGeo, mDark);
+        w.rotation.z = Math.PI/2;
+        w.position.set(ex, H + 0.18, wz2);
+        this.craneGroup.add(w);
+      });
+    });
+
+    // --- Hoist trolley ---
+    const cap = p.capacity;
+    const hs = Math.max(0.7, Math.min(2.5, cap / 12));
+    const hoistGeo = new THREE.BoxGeometry(1.3*hs, 1.0*hs, 1.3*hs);
+    const hoist = new THREE.Mesh(hoistGeo, mSteel);
+    const hoistY = H - bH - 0.15 - hs*0.5;
+    hoist.position.set(0, hoistY, 0); hoist.castShadow = true;
+    this.craneGroup.add(hoist);
+    // Hoist detail stripe
+    const stripeGeo = new THREE.BoxGeometry(1.31*hs, 0.12, 1.31*hs);
+    const stripe = new THREE.Mesh(stripeGeo, mYellow);
+    stripe.position.set(0, hoistY + hs*0.3, 0);
+    this.craneGroup.add(stripe);
+
+    // --- Wire rope ---
+    const wireBottomY = Math.max(0.8, H * 0.15);
+    const wPts = [new THREE.Vector3(0, hoistY - hs*0.5, 0), new THREE.Vector3(0, wireBottomY + 0.4, 0)];
+    const wireGeo = new THREE.BufferGeometry().setFromPoints(wPts);
+    this.craneGroup.add(new THREE.Line(wireGeo, mRope));
+
+    // --- Hook block ---
+    const hookGeo = new THREE.SphereGeometry(0.28*hs, 10, 8);
+    const hook = new THREE.Mesh(hookGeo, mYellow);
+    hook.position.set(0, wireBottomY, 0); hook.castShadow = true;
+    this.craneGroup.add(hook);
+
+    // --- Smart feature sensor nodes ---
+    if (p.features && p.features.length > 0) {
+      const sGeo = new THREE.SphereGeometry(0.22, 8, 8);
+      const sPositions = [
+        [S/2-1.5, H-0.6, 0.8], [-S/2+1.5, H-0.6, -0.8],
+        [0, H-bH-0.2, 1.2], [0.8, hoistY, 0.8]
+      ];
+      sPositions.slice(0, p.features.length).forEach(pos => {
+        const s = new THREE.Mesh(sGeo, mSensor);
+        s.position.set(...pos);
+        this.craneGroup.add(s);
+      });
+    }
+
+    // --- ATEX / hazardous stripes ---
+    if (p.hazardous) {
+      const bsMat = new THREE.MeshPhongMaterial({ color:0x111111, shininess:20 });
+      [-S/2+etW*0.5, S/2-etW*0.5].forEach(ex => {
+        for(let i=0;i<3;i++) {
+          const bs = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.6, etD), bsMat);
+          bs.position.set(ex, H-0.05, -etD*0.3+i*etD*0.3);
+          this.craneGroup.add(bs);
+        }
+      });
+    }
+
+    // Update spec pills
+    const craneType = portMode ? 'RTG/STS' : (heavy ? 'Double Girder' : 'Single Girder');
+    document.getElementById('sp-type').textContent = craneType;
+    document.getElementById('sp-span').textContent = S+'m';
+    document.getElementById('sp-cap').textContent = cap+'t';
+    document.getElementById('sp-ht').textContent = H+'m';
+
+    // Update camera radius
+    const maxD = Math.max(S, H*2);
+    this.radius = maxD * 1.9;
+    this.targetY = H * 0.55;
+  }
+
+  update(params) {
+    Object.assign(this.params, params);
+    this.build();
+  }
+
+  tick() {
+    this.raf = requestAnimationFrame(() => this.tick());
+    if (this.autoRotate) this.theta += 0.004;
+    const ty = this.targetY || this.params.height * 0.55;
+    this.camera.position.x = this.radius * Math.sin(this.theta) * Math.cos(this.phi);
+    this.camera.position.y = ty + this.radius * Math.sin(this.phi);
+    this.camera.position.z = this.radius * Math.cos(this.theta) * Math.cos(this.phi);
+    this.camera.lookAt(0, ty, 0);
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  resize() {
+    const W = this.container.clientWidth, H = this.container.clientHeight;
+    if (!W || !H) return;
+    this.camera.aspect = W/H;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(W, H);
+  }
+
+  screenshot() {
+    this.renderer.render(this.scene, this.camera);
+    return this.renderer.domElement.toDataURL('image/png');
+  }
+
+  destroy() {
+    cancelAnimationFrame(this.raf);
+    this.renderer.dispose();
+  }
+}
+
+// ===== i18n =====
+function setLang(lang, context) {
+  APP.lang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll(`[onclick*="setLang('${lang}'"]`).forEach(b => b.classList.add('active'));
+  const t = T[lang] || T.en;
+  if (context === 'landing') {
+    document.getElementById('badge-text').textContent = t.badge;
+    document.getElementById('hero-title').innerHTML = t.hero;
+    document.getElementById('hero-sub').textContent = t.sub;
+    document.getElementById('cta-text').textContent = t.cta;
+    document.getElementById('stat1').textContent = t.s1;
+    document.getElementById('stat2').textContent = t.s2;
+    document.getElementById('stat3').textContent = t.s3;
+  }
+  if (context === 'config') {
+    // Update config lang buttons
+    ['en','de','fi','zh'].forEach(l => {
+      const el = document.getElementById('ln-'+l);
+      if (el) el.classList.toggle('active', l === lang);
+    });
+  }
+}
+
+// ===== API KEY =====
+function setApiKey(val) {
+  APP.apiKey = val.trim();
+  document.getElementById('key-status').classList.toggle('active', APP.apiKey.length > 10);
+}
+function saveModalKey() {
+  const val = document.getElementById('modal-api-input').value.trim();
+  if (val) {
+    APP.apiKey = val;
+    document.getElementById('api-key-input').value = val;
+    document.getElementById('key-status').classList.add('active');
+  }
+  closeModal('modal-welcome');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ===== PAGE NAVIGATION =====
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  APP.page = id.replace('page-','');
+}
+
+function startConfig() {
+  showPage('page-config');
+  setTimeout(() => {
+    initProgressBar();
+    if (!APP.crane) {
+      APP.crane = new Crane3D(document.getElementById('crane-canvas'));
+    }
+    addKiraMessage(T[APP.lang]?.kira_intro || T.en.kira_intro);
+    document.getElementById('modal-welcome').classList.add('show');
+  }, 100);
+}
+
+function goBack() {
+  showPage('page-config');
+  if (!APP.crane) APP.crane = new Crane3D(document.getElementById('crane-canvas'));
+}
+
+// ===== PROGRESS BAR =====
+function initProgressBar() {
+  const track = document.getElementById('progress-track');
+  track.innerHTML = PHASES.map((ph, i) => `
+    <div class="prog-step ${APP.phase > ph.id ? 'done' : APP.phase === ph.id ? 'active' : ''}" id="prog-${ph.id}">
+      <div class="prog-dot">${APP.phase > ph.id ? '✓' : ph.id}</div>
+      <span class="prog-step-label">${PHASE_LABELS[i]}</span>
+      ${i < PHASES.length-1 ? '<div class="prog-line"></div>' : ''}
+    </div>
+  `).join('');
+}
+
+function updateProgressBar() {
+  PHASES.forEach(ph => {
+    const el = document.getElementById('prog-'+ph.id);
+    if (!el) return;
+    el.className = 'prog-step ' + (APP.phase > ph.id ? 'done' : APP.phase === ph.id ? 'active' : '');
+    el.querySelector('.prog-dot').textContent = APP.phase > ph.id ? '✓' : ph.id;
+  });
+}
+
+// ===== CHAT =====
+function addKiraMessage(text) {
+  APP.messages.push({ role:'assistant', content: text });
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.className = 'msg kira';
+  div.innerHTML = `<div class="msg-avatar">K</div><div class="msg-bubble">${text}</div>`;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function addUserMessage(text) {
+  APP.messages.push({ role:'user', content: text });
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="msg-avatar" style="background:var(--dark3);color:var(--text-muted);">You</div><div class="msg-bubble">${text}</div>`;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function showTyping() {
+  const thread = document.getElementById('chat-thread');
+  const div = document.createElement('div');
+  div.className = 'msg kira'; div.id = 'typing-msg';
+  div.innerHTML = `<div class="msg-avatar">K</div><div class="msg-bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing-msg');
+  if (el) el.remove();
+}
+
+async function askKira(userText) {
+  addUserMessage(userText);
+  showTyping();
+  let response;
+  if (APP.apiKey && APP.apiKey.length > 10) {
+    try {
+      const lang = APP.lang;
+      const systemPrompt = `You are KIRA — the Konecranes Intelligent Requirements Advisor. You help customers configure lifting equipment. Be professional, warm, and concise (2-3 sentences). Never quote prices. Reference prior answers naturally. Always respond in ${lang === 'de' ? 'German' : lang === 'fi' ? 'Finnish' : lang === 'zh' ? 'Chinese (Simplified)' : 'English'}. Current configuration: ${JSON.stringify(APP.config)}`;
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key':APP.apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system:systemPrompt, messages: APP.messages.slice(-8) })
+      });
+      const data = await res.json();
+      response = data.content?.[0]?.text || DEMO[APP.phase]?.[APP.lang] || DEMO[APP.phase]?.en;
+    } catch(e) {
+      response = DEMO[APP.phase]?.[APP.lang] || DEMO[APP.phase]?.en;
+    }
+  } else {
+    await new Promise(r => setTimeout(r, 900 + Math.random()*600));
+    response = DEMO[APP.phase]?.[APP.lang] || DEMO[APP.phase]?.en;
+  }
+  removeTyping();
+  addKiraMessage(response);
+}
+
+// ===== FORM INTERACTIONS =====
+function selectIndustry(val) {
+  APP.config.industry = val;
+  document.querySelectorAll('#industry-grid .option-card').forEach(c => c.classList.toggle('selected', c.dataset.val === val));
+  const labels = { steel:'Steel & Metal', automotive:'Automotive', port:'Port & Shipyard', energy:'Energy', mining:'Mining', general:'General Manufacturing', paper:'Paper & Pulp', other:'Other' };
+  askKira(`My industry is ${labels[val] || val}.`);
+  updateCrane3D();
+}
+
+function selectEnv(val) {
+  APP.config.environment = val;
+  APP.config.outdoor = (val === 'outdoor' || val === 'both');
+  document.querySelectorAll('[data-val="indoor"],[data-val="outdoor"],[data-val="both"]').forEach(c => c.classList.toggle('selected', c.dataset.val === val));
+  updateCrane3D();
+}
+
+function selectOpt(key, val, el) {
+  APP.config[key] = val;
+  const parent = el.closest('.form-grid');
+  parent.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const dispKey = key.replace(/([A-Z])/g,' $1').toLowerCase();
+  onFormChange(key, val, val + ' ' + dispKey);
+}
+
+function onFormChange(key, val, label) {
+  APP.config[key] = val;
+  updateCrane3D();
+}
+
+function onSliderFinal(key, val, label) {
+  APP.config[key] = parseFloat(val);
+  updateCrane3D();
+  askKira(`I've set ${label}.`);
+}
+
+function toggleBool(key, btnId, label) {
+  APP.config[key] = !APP.config[key];
+  document.getElementById(btnId).classList.toggle('on', APP.config[key]);
+  if (key === 'hazardous') {
+    document.getElementById('atex-row').classList.toggle('hidden', !APP.config[key]);
+  }
+  if (APP.config[key]) askKira(label + ' — noted.');
+  updateCrane3D();
+}
+
+function toggleCert(name, el) {
+  el.classList.toggle('selected');
+  if (el.classList.contains('selected')) {
+    if (!APP.config.certifications.includes(name)) APP.config.certifications.push(name);
+  } else {
+    APP.config.certifications = APP.config.certifications.filter(c=>c!==name);
+  }
+}
+
+function toggleFeature(name, el) {
+  el.classList.toggle('on');
+  if (el.classList.contains('on')) {
+    if (!APP.config.features.includes(name)) APP.config.features.push(name);
+  } else {
+    APP.config.features = APP.config.features.filter(f=>f!==name);
+  }
+  updateCrane3D();
+}
+
+// ===== UPDATE CRANE =====
+function updateCrane3D() {
+  if (!APP.crane) return;
+  APP.crane.update({
+    span: APP.config.span,
+    height: APP.config.bayHeight,
+    runway: APP.config.runway,
+    capacity: APP.config.capacity,
+    outdoor: APP.config.outdoor,
+    hazardous: APP.config.hazardous,
+    features: APP.config.features
+  });
+}
+
+// ===== PHASE NAVIGATION =====
+function nextPhase() {
+  const ph = APP.phase;
+  // Send phase summary to KIRA
+  const summaries = {
+    1: `Industry: ${APP.config.industry||'general'}, Environment: ${APP.config.environment}, Units: ${APP.config.units}`,
+    2: `Span: ${APP.config.span}m, Height: ${APP.config.bayHeight}m, Runway: ${APP.config.runway}m`,
+    3: `Capacity: ${APP.config.capacity}t, Hoist: ${APP.config.hoistSpeed}, Shifts: ${APP.config.shifts}`,
+    4: `Temp: ${APP.config.tempMin}°C to ${APP.config.tempMax}°C, Hazardous: ${APP.config.hazardous}, Certs: ${APP.config.certifications.join(',')||'none'}`,
+    5: `Features: ${APP.config.features.join(',')||'none'}, Budget: ${APP.config.budget}, Timeline: ${APP.config.timeline}`
+  };
+  if (ph < 5) {
+    askKira(summaries[ph]);
+    setTimeout(() => {
+      APP.phase = ph + 1;
+      switchPhase(APP.phase);
+    }, 200);
+  } else {
+    askKira(summaries[5]);
+    setTimeout(() => showSummary(), 1500);
+  }
+}
+
+function switchPhase(n) {
+  APP.phase = n;
+  updateProgressBar();
+  const ph = PHASES[n-1];
+  document.getElementById('phase-tag').textContent = ph.tag;
+  document.getElementById('phase-title').textContent = ph.title;
+  document.querySelectorAll('.phase-form').forEach(f => f.classList.remove('active'));
+  document.getElementById(ph.form).classList.add('active');
+  document.getElementById('next-btn').textContent = n < 5 ? 'Next →' : 'View Report →';
+  // KIRA transition message
+  const transitions = {
+    2: "Let's look at your facility dimensions. These define what crane sizes are physically possible at your site.",
+    3: "Now for performance specs — what does this crane need to lift, and how often?",
+    4: "Safety and environmental conditions next. These determine protection ratings and certifications required.",
+    5: "Almost done! Let's select smart features and finalize commercial requirements."
+  };
+  if (transitions[n]) {
+    const t = transitions[n];
+    const tLang = { de: { 2:"Weiter zu den Abmessungen.", 3:"Jetzt zu den Leistungsanforderungen.", 4:"Sicherheit und Umgebung.", 5:"Fast fertig — Smart Features und Budget." }, fi: { 2:"Tilamitat seuraavaksi.", 3:"Suorituskykyvaatimukset.", 4:"Turvallisuus ja ympäristö.", 5:"Melkein valmista — älyominaisuudet." }, zh: { 2:"接下来是设施尺寸。", 3:"现在来看性能规格。", 4:"安全和环境条件。", 5:"快完成了！智能功能和预算。" } };
+    addKiraMessage(tLang[APP.lang]?.[n] || t);
+  }
+}
+
+// ===== SUMMARY PAGE =====
+function getCraneRecommendation() {
+  const c = APP.config;
+  if (c.industry === 'port') return { name:'STS Container Crane', desc:'Ship-to-shore crane for container terminal operations — high-speed, high-throughput design optimised for port logistics.' };
+  if (c.capacity > 50) return { name:'Custom Heavy-Duty Bridge Crane', desc:'Special design process crane for extreme loads — fully engineered to your facility and process requirements.' };
+  if (c.capacity > 20 || c.shifts >= 3) return { name:'CXT Double Girder Rope Hoist Crane', desc:'Heavy-duty overhead crane with wire rope hoist — ideal for demanding production environments and high duty cycles.' };
+  if (c.hazardous) return { name:'EXCXT EX Rope Hoist Crane', desc:'ATEX-certified explosion-proof overhead crane — designed for hazardous atmospheres in chemical, oil & gas, and mining applications.' };
+  return { name:'CXT Single Girder Rope Hoist Crane', desc:'Versatile overhead crane for standard industrial use — optimal for spans up to 25m with a wide range of lifting capacities.' };
+}
+
+function getDutyClass() {
+  const shifts = parseInt(APP.config.shifts) || 2;
+  const cap = APP.config.capacity;
+  if (shifts >= 3 || cap > 50) return 'M7 – Severe duty';
+  if (shifts === 2 || cap > 20) return 'M5/M6 – Regular duty';
+  return 'M3/M4 – Light duty';
+}
+
+function getKiraNote() {
+  const c = APP.config;
+  const notes = {
+    en: `Based on your requirements for ${c.industry||'manufacturing'} operations with a ${c.capacity}t capacity and ${c.span}m span, the recommended crane represents an excellent fit for your operational profile. ${c.features.length > 0 ? 'The selected smart features will provide significant ROI through reduced downtime and predictive maintenance.' : 'Consider adding TRUCONNECT® remote monitoring for enhanced uptime visibility.'} A Konecranes specialist will review this configuration and contact you to confirm final specifications.`,
+    de: `Basierend auf Ihren Anforderungen für ${c.capacity}t Tragfähigkeit und ${c.span}m Spannweite ist die empfohlene Konfiguration optimal. Ein Konecranes-Spezialist wird die Konfiguration prüfen.`,
+    fi: `${c.capacity}t kapasiteetin ja ${c.span}m jännevälin perusteella suositeltu kokoonpano sopii erinomaisesti tarpeisiinne. Konecranes-asiantuntija tarkistaa konfiguraation.`,
+    zh: `根据您的${c.capacity}吨起重量和${c.span}米跨度要求，推荐的起重机配置非常适合您的运营需求。Konecranes专家将审查此配置。`
+  };
+  return notes[APP.lang] || notes.en;
+}
+
+async function showSummary() {
+  showPage('page-summary');
+  document.getElementById('session-id').textContent = APP.sessionId;
+  const reco = getCraneRecommendation();
+  document.getElementById('sum-crane-name').textContent = reco.name;
+  document.getElementById('sum-crane-desc').textContent = reco.desc;
+  document.getElementById('sum-kira-note').textContent = getKiraNote();
+
+  // Features
+  const featEl = document.getElementById('sum-features');
+  if (APP.config.features.length > 0) {
+    featEl.innerHTML = APP.config.features.map(f => `<div class="feat-tag">${f}</div>`).join('');
+  } else {
+    document.getElementById('features-section').style.display = 'none';
+  }
+
+  // Summary table
+  const c = APP.config;
+  const rows = [
+    ['Industry', c.industry || '—'],
+    ['Environment', c.environment],
+    ['Crane span', c.span + ' m'],
+    ['Hook height', c.bayHeight + ' m'],
+    ['Runway length', c.runway + ' m'],
+    ['Max capacity', c.capacity + ' t'],
+    ['Hoist speed', c.hoistSpeed],
+    ['Duty class', getDutyClass()],
+    ['Operating shifts', (c.shifts || '—') + '/day'],
+    ['Load type', c.loadType || '—'],
+    ['Temp. range', c.tempMin + '°C to ' + c.tempMax + '°C'],
+    ['ATEX required', c.hazardous ? 'Yes' + (c.atexZone ? ' — Zone '+c.atexZone : '') : 'No'],
+    ['Budget', c.budget || '—'],
+    ['Delivery timeline', c.timeline || '—'],
+    ['Certifications', c.certifications.length > 0 ? c.certifications.join(', ') : 'Standard CE']
+  ];
+  document.getElementById('sum-table').innerHTML = rows.map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+  // Init summary 3D crane
+  setTimeout(() => {
+    if (APP.summaryCrane) APP.summaryCrane.destroy();
+    const sc = document.getElementById('summary-canvas');
+    APP.summaryCrane = new Crane3D(sc);
+    APP.summaryCrane.update({ span:c.span, height:c.bayHeight, runway:c.runway, capacity:c.capacity, outdoor:c.outdoor, hazardous:c.hazardous, features:c.features });
+  }, 200);
+}
+
+// ===== PDF GENERATION =====
+function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const W = 210, H = 297;
+  const blue = [0,48,135], yellow = [255,209,0], dark = [7,12,26], white = [255,255,255], gray = [100,115,140];
+
+  // Cover header bar
+  doc.setFillColor(...blue); doc.rect(0, 0, W, 50, 'F');
+  // Yellow accent bar
+  doc.setFillColor(...yellow); doc.rect(0, 50, W, 3, 'F');
+
+  // Logo text
+  doc.setTextColor(...yellow); doc.setFontSize(22); doc.setFont('helvetica','bold');
+  doc.text('KONECRANES', 20, 22);
+  doc.setTextColor(...white); doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text('moves what matters', 20, 30);
+
+  // Report title
+  doc.setFontSize(18); doc.setFont('helvetica','bold'); doc.setTextColor(...white);
+  doc.text('Crane Requirements Report', 20, 44);
+
+  // Date + session
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(180,200,255);
+  doc.text(`Generated: ${new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'})}   Session: ${APP.sessionId}`, W-20, 44, {align:'right'});
+
+  let y = 62;
+
+  // Crane screenshot
+  try {
+    const crane = APP.summaryCrane || APP.crane;
+    if (crane) {
+      crane.renderer.render(crane.scene, crane.camera);
+      const img = crane.screenshot();
+      doc.addImage(img, 'PNG', W/2-5, 56, 85, 70, undefined, 'FAST');
+      // Image border
+      doc.setDrawColor(...blue); doc.setLineWidth(0.3);
+      doc.rect(W/2-5, 56, 85, 70);
+    }
+  } catch(e) {}
+
+  // RECOMMENDATION BOX
+  doc.setFillColor(0, 55, 150); doc.roundedRect(15, y, W/2-25, 68, 3, 3, 'F');
+  doc.setFillColor(...yellow); doc.roundedRect(15, y, W/2-25, 10, 3, 3, 'F');
+  doc.rect(15, y+5, W/2-25, 5, 'F');
+  doc.setTextColor(...dark); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('KIRA RECOMMENDS', 19, y+7);
+  const reco = getCraneRecommendation();
+  doc.setTextColor(...white); doc.setFontSize(13); doc.setFont('helvetica','bold');
+  const wrapped = doc.splitTextToSize(reco.name, W/2-30);
+  doc.text(wrapped, 19, y+20);
+  doc.setFontSize(8.5); doc.setFont('helvetica','normal'); doc.setTextColor(180,210,255);
+  const descWrapped = doc.splitTextToSize(reco.desc, W/2-30);
+  doc.text(descWrapped, 19, y + 20 + wrapped.length*8 + 3);
+  y += 78;
+
+  // KIRA NOTE
+  doc.setFillColor(15, 25, 55); doc.roundedRect(15, y, W-30, 30, 3, 3, 'F');
+  doc.setDrawColor(...yellow); doc.setLineWidth(0.5); doc.line(15, y, 15, y+30);
+  doc.setTextColor(200,220,255); doc.setFontSize(8); doc.setFont('helvetica','italic');
+  const note = doc.splitTextToSize(getKiraNote(), W-40);
+  doc.text(note.slice(0,3), 20, y+8);
+  y += 38;
+
+  // SPECS TABLE
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...blue);
+  doc.text('CONFIGURATION SUMMARY', 15, y+8);
+  doc.setFillColor(...yellow); doc.rect(15, y+11, 30, 1, 'F');
+  y += 18;
+
+  const c = APP.config;
+  const rows = [
+    ['Industry', c.industry||'—'],['Environment', c.environment],
+    ['Crane Span', c.span+' m'],['Hook Height', c.bayHeight+' m'],
+    ['Runway Length', c.runway+' m'],['Max Capacity', c.capacity+' t'],
+    ['Hoist Speed', c.hoistSpeed],['Duty Class', getDutyClass()],
+    ['Operating Shifts', (c.shifts||'—')+'/day'],['Load Type', c.loadType||'—'],
+    ['Temp. Range', c.tempMin+'°C to '+c.tempMax+'°C'],
+    ['ATEX Required', c.hazardous?'Yes':'No'],['Budget', c.budget||'—'],
+    ['Timeline', c.timeline||'—'],
+    ['Certifications', c.certifications.length>0?c.certifications.join(', '):'Standard CE']
+  ];
+
+  rows.forEach((row, i) => {
+    const rowY = y + i*10;
+    if (i%2===0) { doc.setFillColor(12,22,50); doc.rect(15, rowY-4, W-30, 10, 'F'); }
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...gray);
+    doc.text(row[0], 20, rowY+2);
+    doc.setFont('helvetica','bold'); doc.setTextColor(...white);
+    doc.text(String(row[1]), 110, rowY+2);
+  });
+  y += rows.length*10 + 10;
+
+  // Smart features
+  if (APP.config.features.length > 0) {
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...blue);
+    doc.text('SMART FEATURES SELECTED', 15, y);
+    doc.setFillColor(...yellow); doc.rect(15, y+3, 30, 1, 'F');
+    y += 12;
+    APP.config.features.forEach(f => {
+      doc.setFillColor(0,40,110); doc.roundedRect(15, y, 50, 8, 2, 2, 'F');
+      doc.setTextColor(...white); doc.setFontSize(8); doc.setFont('helvetica','normal');
+      doc.text(f, 19, y+5.5);
+      y += 12;
+    });
+  }
+
+  // Footer
+  doc.setFillColor(...blue); doc.rect(0, H-18, W, 18, 'F');
+  doc.setTextColor(...yellow); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('KONECRANES', 15, H-9);
+  doc.setFont('helvetica','normal'); doc.setTextColor(180,200,255);
+  doc.text('This report is indicative. Final specifications subject to engineering review.', W/2, H-9, {align:'center'});
+  doc.text('konecranes.com', W-15, H-9, {align:'right'});
+
+  doc.save(`Konecranes_Config_${APP.sessionId}_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+// ===== VOICE INPUT =====
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('Voice input requires Chrome or Edge browser.');
+    return;
+  }
+  if (APP.voiceActive) {
+    APP.recognition?.stop();
+    APP.voiceActive = false;
+    document.getElementById('voice-btn').classList.remove('recording');
+    document.getElementById('voice-hint').textContent = 'Click mic to speak your answer, or use the form above';
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  const langMap = { en:'en-US', de:'de-DE', fi:'fi-FI', zh:'zh-CN' };
+  rec.lang = langMap[APP.lang] || 'en-US';
+  rec.continuous = false; rec.interimResults = false;
+  rec.onresult = e => {
+    const text = e.results[0][0].transcript;
+    document.getElementById('voice-hint').textContent = `"${text}"`;
+    askKira(text);
+    APP.voiceActive = false;
+    document.getElementById('voice-btn').classList.remove('recording');
+  };
+  rec.onerror = () => {
+    APP.voiceActive = false;
+    document.getElementById('voice-btn').classList.remove('recording');
+    document.getElementById('voice-hint').textContent = 'Voice input unavailable — use the form above';
+  };
+  rec.onend = () => {
+    APP.voiceActive = false;
+    document.getElementById('voice-btn').classList.remove('recording');
+  };
+  APP.recognition = rec;
+  APP.voiceActive = true;
+  document.getElementById('voice-btn').classList.add('recording');
+  document.getElementById('voice-hint').textContent = 'Listening... speak now';
+  rec.start();
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  // Restore saved session
+  try {
+    const saved = sessionStorage.getItem('kc_config');
+    if (saved) Object.assign(APP.config, JSON.parse(saved));
+  } catch(e){}
+
+  // Auto-save config
+  setInterval(() => {
+    try { sessionStorage.setItem('kc_config', JSON.stringify(APP.config)); } catch(e){}
+  }, 10000);
+
+  // Init progress bar (will be regenerated on page show)
+  initProgressBar();
+});
+</script>
+</body>
+</html>
